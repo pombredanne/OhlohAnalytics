@@ -696,3 +696,21 @@ May 6th, 2013 - May 7th, 2013
 		xcode-plugin-hudson
 		xtcommerce
 		yhc
+		
+July 17th, 2013
+	Tried to fetch projects 7201 - 8000, but Ohloh appeared to have crashed along the way.
+	Last succesful fetch: pycassa (7711), project to start refetch: jblas (7712).
+	
+July 18th, 2013
+	Tried to fetch projects 77712 - 8500, but Ohloh appeared to have crashed along the way.
+	Last succesful fetch: monkeyspider (7895), project to start refetch: director (7896).
+	
+	Fetched projects 7896 - 8455.
+
+July 21st, 2013
+	Tried to fetch projects 10056 - 10856, but Ohloh appeared to have crashed along the way.
+	Last succesful fetch: theadamsflow (10548), project to start refetch: raven (10549).
+	
+July 21st, 2013
+	Tried to fetch projects 12149 - 12949, but Eclipse ran into strange memory problems.
+	Last succesful fetch: innotop (12437).

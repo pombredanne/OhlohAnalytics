@@ -3,6 +3,7 @@ module projectFactsRepository
 import Prelude;
 import lang::xml::DOM;
 import Logging;
+import Caching;
 
 private loc LocalOhlohProjectsRepository = |project://OhlohAnalytics/data|;
 private loc ProjectNamesListFile = LocalOhlohProjectsRepository + "ProjectNamesList.txt";
@@ -13,6 +14,7 @@ private str SizeFactsFileName = "SizeFacts.xml";
 private str ActivityFactsFileName = "ActivityFacts.xml";
 
 private str RepositoryTypeSVN = "SvnRepository";
+private str RepositoryTypeSVNSync = "SvnSyncRepository";
 
 public list[str] getProjectNamesInRepository() {
 	return listEntries(LocalOhlohProjectsRepository + "projects");
@@ -23,6 +25,8 @@ public list[str] getProjectNamesOnList() {
 }
 
 alias repositoriesRel = rel[str projectName, str repositoryType, str repositoryURL];
+
+alias metaDataRel = rel[str projectName, str elementValue];
 
 alias factsKey = tuple[str projectName, str year, str month];
 
@@ -75,6 +79,29 @@ public monthlyFactsMap mergeFactsForAllProjects () {
 	return mergeFactsForProjects(getProjectNamesInRepository());
 }
 
+public metaDataRel getMetaDataElements(list[str] projectNames, str elementName) {
+	return {
+		valuesForProject |
+		projectName <- projectNames,
+		valuesForProject <- getMetaDataElements(projectName, elementName)
+	};
+}
+
+public metaDataRel getMetaDataElements(str projectName, str elementName) {
+	result = {};
+		
+	top-down visit(getProjectMetaDataDOM(projectName)) {
+		case element(_,
+					 elementName,
+					 [Node*,charData(str elementValue)]):
+		{
+             result += <projectName,
+			 			elementValue>;
+		}
+	}
+	return result;
+}
+
 public repositoriesRel getRepositoryFactsForProjects(list[str] projectNames) {
 	return {
 		<projectName, repositoryType, repositoryURL> |
@@ -87,7 +114,7 @@ public repositoriesRel findInvalidSVNRepositories(repositoriesRel repositoryFact
 	return {
 		<projectName, repositoryType, repositoryURL> |
 		<str projectName, str repositoryType, str repositoryURL> <- repositoryFacts,
-		repositoryType := RepositoryTypeSVN,
+		repositoryType := RepositoryTypeSVN || repositoryType := RepositoryTypeSVNSync,
 		!(
 		 /.*\/trunk\/?/i      := repositoryURL ||
 		 /.*\/head\/?/i       := repositoryURL ||
@@ -270,6 +297,11 @@ private Node getSizeFactsDOM(str projectName) {
 }
 
 private Node getXMLContentsDOM(str projectName, str fileName) {
+	return getValueFromCache("projects" + "/" + projectName + "/" + fileName + ".cache",
+		   			         #Node, Node () {return uncachedGetXMLContentsDOM(projectName, fileName);});
+}
+
+private Node uncachedGetXMLContentsDOM(str projectName, str fileName) {
 	loc file = LocalOhlohProjectsRepository + "projects" + projectName + fileName;
 	str XML = readFile(file);
 	if (!validateXML(XML)) throw "getXMLContentsDOM: Validation of XML contents failed while reading <fileName> for project: <projectName>";
